@@ -6,7 +6,6 @@
   <title>Gerenciamento de Tarefas</title>
   <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@400;600&display=swap" rel="stylesheet">
   <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/5.15.4/css/all.min.css">
-  <link href="https://fonts.googleapis.com/css2?family=Zain:wght@200;300;400;700;800;900&display=swap" rel="stylesheet">
   <style>
     :root {
       --bg:#f4f7fc;
@@ -24,7 +23,7 @@
       margin: 0;
       padding: 0;
       box-sizing: border-box;
-      font-family: "Zain", sans-serif;
+      font-family: 'Poppins', sans-serif;
     }
 
     body {
@@ -88,6 +87,7 @@
       margin-bottom: 1rem;
       box-shadow: 0 2px 5px rgba(0, 0, 0, 0.1);
       position: relative;
+      cursor: grab;
     }
 
     .task__title {
@@ -209,13 +209,13 @@
     </div>
 
     <div class="project-tasks">
-      <div class="project-column task-column--pending" id="pending">
+      <div class="project-column task-column--pending" id="pending" ondragover="allowDrop(event)" ondrop="drop(event)">
         <h2>Pendente</h2>
       </div>
-      <div class="project-column task-column--progress" id="in-progress">
+      <div class="project-column task-column--progress" id="in-progress" ondragover="allowDrop(event)" ondrop="drop(event)">
         <h2>Em Progresso</h2>
       </div>
-      <div class="project-column task-column--done" id="done">
+      <div class="project-column task-column--done" id="done" ondragover="allowDrop(event)" ondrop="drop(event)">
         <h2>Concluído</h2>
       </div>
     </div>
@@ -235,152 +235,133 @@
 </div>
 
 <script>
-// Função para salvar no LocalStorage
-function saveTasksToLocalStorage(tasks) {
-  localStorage.setItem('tasks', JSON.stringify(tasks));
-}
+  let draggedTask = null;
 
-// Função para carregar tarefas do LocalStorage
-function loadTasksFromLocalStorage() {
-  const tasks = localStorage.getItem('tasks');
-  return tasks ? JSON.parse(tasks) : [];
-}
+  // Função para salvar no LocalStorage
+  function saveTasksToLocalStorage(tasks) {
+    localStorage.setItem('tasks', JSON.stringify(tasks));
+  }
 
-// Função para renderizar as tarefas nas colunas
-function renderTasks(tasks) {
-  const pendingColumn = document.getElementById('pending');
-  const progressColumn = document.getElementById('in-progress');
-  const doneColumn = document.getElementById('done');
+  // Função para carregar tarefas do LocalStorage
+  function loadTasksFromLocalStorage() {
+    const tasks = localStorage.getItem('tasks');
+    return tasks ? JSON.parse(tasks) : [];
+  }
 
-  pendingColumn.innerHTML = '<h2>Pendente</h2>';
-  progressColumn.innerHTML = '<h2>Em Progresso</h2>';
-  doneColumn.innerHTML = '<h2>Concluído</h2>';
+  // Função para renderizar as tarefas nas colunas
+  function renderTasks(tasks) {
+    const pendingColumn = document.getElementById('pending');
+    const progressColumn = document.getElementById('in-progress');
+    const doneColumn = document.getElementById('done');
 
-  tasks.forEach(task => {
-    const taskHTML = `
-      <div class="task" draggable="true" data-id="${task.id}">
-        <img class="task__drag-icon" src="https://img.icons8.com/material-rounded/24/000000/drag-reorder.png" alt="drag icon" />
-        <div class="task__title">${task.titulo}</div>
-        <div class="task__description">${task.descricao}</div>
-        <div class="task__responsible">Responsável: ${task.responsavel}</div>
-        <div class="task__progress">Progresso: ${task.status === 'pendente' ? '0%' : task.status === 'em_progresso' ? '50%' : '100%'}</div>
-      </div>
-    `;
+    pendingColumn.innerHTML = '<h2>Pendente</h2>';
+    progressColumn.innerHTML = '<h2>Em Progresso</h2>';
+    doneColumn.innerHTML = '<h2>Concluído</h2>';
 
-    if (task.status === 'pendente') {
-      pendingColumn.innerHTML += taskHTML;
-    } else if (task.status === 'em_progresso') {
-      progressColumn.innerHTML += taskHTML;
-    } else if (task.status === 'concluida') {
-      doneColumn.innerHTML += taskHTML;
+    tasks.forEach(task => {
+      const taskHTML = `
+        <div class="task" draggable="true" ondragstart="drag(event)" id="task-${task.id}" data-id="${task.id}">
+          <img class="task__drag-icon" src="https://img.icons8.com/material-rounded/24/000000/drag-reorder.png" alt="drag icon" />
+          <div class="task__title">${task.titulo}</div>
+          <div class="task__description">${task.descricao}</div>
+          <div class="task__responsible">Responsável: ${task.responsavel}</div>
+          <div class="task__progress">Progresso: ${task.status === 'pendente' ? '0%' : task.status === 'em_progresso' ? '50%' : '100%'}</div>
+        </div>
+      `;
+
+      if (task.status === 'pendente') {
+        pendingColumn.innerHTML += taskHTML;
+      } else if (task.status === 'em_progresso') {
+        progressColumn.innerHTML += taskHTML;
+      } else if (task.status === 'concluida') {
+        doneColumn.innerHTML += taskHTML;
+      }
+    });
+  }
+
+  // Função para permitir o arraste de elementos
+  function drag(event) {
+    draggedTask = event.target;
+  }
+
+  // Permitir que o contêiner receba a tarefa arrastada
+  function allowDrop(event) {
+    event.preventDefault();
+  }
+
+  // Função para soltar o item arrastado no contêiner correto
+  function drop(event) {
+    event.preventDefault();
+    const status = event.target.closest('.project-column').id;
+    const taskId = draggedTask.getAttribute('data-id');
+    const tasks = loadTasksFromLocalStorage();
+    const taskIndex = tasks.findIndex(task => task.id == taskId);
+
+    if (taskIndex > -1) {
+      tasks[taskIndex].status = status.replace('-', '_');
+      saveTasksToLocalStorage(tasks);
+      renderTasks(tasks);
+    }
+  }
+
+  // Função para abrir o modal
+  function openModal() {
+    document.getElementById("taskModal").style.display = "block";
+  }
+
+  // Função para fechar o modal
+  function closeModal() {
+    document.getElementById("taskModal").style.display = "none";
+  }
+
+  // Evento de abrir modal ao clicar em "Criar Tarefa"
+  document.querySelector('.add-task').addEventListener('click', openModal);
+
+  // Fechar o modal ao clicar no botão de fechar
+  document.querySelector('.close').addEventListener('click', closeModal);
+
+  // Fechar o modal ao clicar fora dele
+  window.onclick = function(event) {
+    if (event.target == document.getElementById("taskModal")) {
+      closeModal();
+    }
+  }
+
+  // Função para salvar nova tarefa
+  document.querySelector('.save-task').addEventListener('click', () => {
+    const titulo = document.getElementById("taskTitle").value;
+    const descricao = document.getElementById("taskDescription").value;
+    const responsavel = document.getElementById("taskResponsible").value;
+
+    if (titulo && descricao && responsavel) {
+      const tasks = loadTasksFromLocalStorage();
+      const newTask = {
+        id: tasks.length ? tasks[tasks.length - 1].id + 1 : 1,
+        titulo,
+        descricao,
+        responsavel,
+        status: 'pendente'
+      };
+
+      tasks.push(newTask);
+      saveTasksToLocalStorage(tasks);
+      renderTasks(tasks);
+      closeModal();
+
+      // Limpar campos do modal após salvar
+      document.getElementById("taskTitle").value = '';
+      document.getElementById("taskDescription").value = '';
+      document.getElementById("taskResponsible").value = '';
+    } else {
+      alert("Todos os campos são obrigatórios!");
     }
   });
 
-  // Reaplicar os eventos de drag and drop após renderizar as tarefas
-  applyDragAndDrop();
-}
-
-// Função para aplicar os eventos de arrastar e soltar
-function applyDragAndDrop() {
-  let draggedTask = null;
-  const columns = document.querySelectorAll('.project-column');
-
-  columns.forEach(column => {
-    column.addEventListener('dragover', (e) => {
-      e.preventDefault();
-    });
-
-    column.addEventListener('drop', (e) => {
-      if (draggedTask) {
-        const taskId = draggedTask.getAttribute('data-id');
-        const tasks = loadTasksFromLocalStorage();
-        const taskIndex = tasks.findIndex(task => task.id == taskId);
-
-        if (taskIndex > -1) {
-          tasks[taskIndex].status = column.getAttribute('id').replace('-', '_');
-          saveTasksToLocalStorage(tasks);
-          renderTasks(tasks);
-        }
-
-        draggedTask = null;
-      }
-    });
-  });
-
-  document.querySelectorAll('.task').forEach(task => {
-    task.querySelector('.task__drag-icon').addEventListener('mousedown', (e) => {
-      draggedTask = task;
-    });
-
-    task.addEventListener('dragstart', (e) => {
-      setTimeout(() => draggedTask.style.display = 'none', 0);
-    });
-
-    task.addEventListener('dragend', (e) => {
-      setTimeout(() => draggedTask.style.display = 'block', 0);
-      draggedTask = null;
-    });
-  });
-}
-
-// Função para abrir o modal
-function openModal() {
-  document.getElementById("taskModal").style.display = "block";
-}
-
-// Função para fechar o modal
-function closeModal() {
-  document.getElementById("taskModal").style.display = "none";
-}
-
-// Evento de abrir modal ao clicar em "Criar Tarefa"
-document.querySelector('.add-task').addEventListener('click', openModal);
-
-// Fechar o modal ao clicar no botão de fechar
-document.querySelector('.close').addEventListener('click', closeModal);
-
-// Fechar o modal ao clicar fora dele
-window.onclick = function(event) {
-  if (event.target == document.getElementById("taskModal")) {
-    closeModal();
-  }
-}
-
-// Função para salvar nova tarefa
-document.querySelector('.save-task').addEventListener('click', () => {
-  const titulo = document.getElementById("taskTitle").value;
-  const descricao = document.getElementById("taskDescription").value;
-  const responsavel = document.getElementById("taskResponsible").value;
-
-  if (titulo && descricao && responsavel) {
+  // Carregar as tarefas ao carregar a página
+  document.addEventListener('DOMContentLoaded', () => {
     const tasks = loadTasksFromLocalStorage();
-    const newTask = {
-      id: tasks.length ? tasks[tasks.length - 1].id + 1 : 1,
-      titulo,
-      descricao,
-      responsavel,
-      status: 'pendente'
-    };
-
-    tasks.push(newTask);
-    saveTasksToLocalStorage(tasks);
     renderTasks(tasks);
-    closeModal();
-
-    // Limpar campos do modal após salvar
-    document.getElementById("taskTitle").value = '';
-    document.getElementById("taskDescription").value = '';
-    document.getElementById("taskResponsible").value = '';
-  } else {
-    alert("Todos os campos são obrigatórios!");
-  }
-});
-
-// Carregar as tarefas ao carregar a página
-document.addEventListener('DOMContentLoaded', () => {
-  const tasks = loadTasksFromLocalStorage();
-  renderTasks(tasks);
-});
+  });
 </script>
 
 </body>
