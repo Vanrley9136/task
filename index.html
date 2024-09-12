@@ -86,7 +86,7 @@
       border-radius: 8px;
       margin-bottom: 1rem;
       box-shadow: 0 2px 5px rgba(0, 0, 0, 0.1);
-      cursor: move;
+      position: relative;
     }
 
     .task__title {
@@ -106,6 +106,20 @@
       font-weight: 600;
       color: #333;
       margin-bottom: 1rem;
+    }
+
+    .task__progress {
+      font-size: 12px;
+      font-weight: 600;
+      margin-bottom: 0.5rem;
+      color: var(--in-progress);
+    }
+
+    .task__drag-icon {
+      position: absolute;
+      top: 10px;
+      right: 10px;
+      cursor: move;
     }
 
     .task-column--pending {
@@ -244,9 +258,11 @@ function renderTasks(tasks) {
   tasks.forEach(task => {
     const taskHTML = `
       <div class="task" draggable="true" data-id="${task.id}">
+        <img class="task__drag-icon" src="https://img.icons8.com/material-rounded/24/000000/drag-reorder.png" alt="drag icon" />
         <div class="task__title">${task.titulo}</div>
         <div class="task__description">${task.descricao}</div>
         <div class="task__responsible">Responsável: ${task.responsavel}</div>
+        <div class="task__progress">Progresso: ${task.status === 'pendente' ? '0%' : task.status === 'em_progresso' ? '50%' : '100%'}</div>
       </div>
     `;
 
@@ -291,13 +307,17 @@ function applyDragAndDrop() {
   });
 
   document.querySelectorAll('.task').forEach(task => {
+    task.querySelector('.task__drag-icon').addEventListener('mousedown', (e) => {
+      draggedTask = task;
+    });
+
     task.addEventListener('dragstart', (e) => {
-      draggedTask = e.target;
-      setTimeout(() => e.target.style.display = 'none', 0);
+      setTimeout(() => draggedTask.style.display = 'none', 0);
     });
 
     task.addEventListener('dragend', (e) => {
-      draggedTask.style.display = 'block';
+      setTimeout(() => draggedTask.style.display = 'block', 0);
+      draggedTask = null;
     });
   });
 }
